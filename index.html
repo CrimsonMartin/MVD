@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>MVD</title>
+    <style>
+      body { margin: 0; font-family: system-ui, -apple-system, sans-serif; }
+      .topbar { height: 56px; display:flex; align-items:center; padding:0 12px; border-bottom:1px solid #3333; }
+      .layout { display:grid; grid-template-columns: 84px 1fr 320px; height: calc(100vh - 56px); }
+      .left, .right { border-right:1px solid #3333; }
+      .right { border-left:1px solid #3333; border-right:none; }
+      .center { display:flex; align-items:center; justify-content:center; }
+      .panel { padding: 12px; }
+      @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .left,.right { display:none; } }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <strong>MVD</strong>
+      <div style="margin-left:auto;">Preview Project | Settings</div>
+    </div>
+    <div class="layout">
+      <div class="left panel">Tools</div>
+      <div class="center">Canvas</div>
+      <div class="right panel">Inspector</div>
+    </div>
+  </body>
+</html>
