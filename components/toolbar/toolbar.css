@@ -4,6 +4,21 @@
   background: var(--panel);
   border-right: 1px solid var(--line);
   padding: 12px;
+  transition: padding 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.toolbarTitle {
+  font-size: 20px;
+  font-weight: 800;
 }
 
 .segmented {
@@ -49,6 +64,29 @@
 
 .tool.on {
   outline: 2px solid rgba(255, 159, 26, 0.55);
+}
+
+/* Collapsed toolbar state */
+.left.collapsed {
+  padding: 12px 0;
+  overflow: hidden;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.left.collapsed .segmented,
+.left.collapsed .tools,
+.left.collapsed .toolbarTitle {
+  display: none;
+}
+
+.left.collapsed .toolbarHeader {
+  margin-bottom: 0;
+  justify-content: center;
+}
+
+.left.collapsed #btnCollapseToolbar {
+  margin: 0;
 }
 
 /* Responsive */

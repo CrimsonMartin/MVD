@@ -3,11 +3,19 @@
 .app {
   height: calc(100vh - 56px);
   display: grid;
-  grid-template-columns: 240px 1fr 48px;
+  grid-template-columns: 48px 1fr 48px;
   transition: grid-template-columns 0.3s ease;
 }
 
+.app.toolbar-expanded {
+  grid-template-columns: 240px 1fr 48px;
+}
+
 .app.inspector-expanded {
+  grid-template-columns: 48px 1fr 360px;
+}
+
+.app.toolbar-expanded.inspector-expanded {
   grid-template-columns: 240px 1fr 360px;
 }
 

@@ -5,6 +5,7 @@ const state = {
   workArea: { w: 300, h: 200, t: 20 },
   mode: "laser", // "laser" or "cnc"
   tool: "select",
+  toolbarCollapsed: true,
   inspectorCollapsed: true,
   collapsedGroups: {},
   object: { x: 0, y: 0, w: 100, h: 60 },
