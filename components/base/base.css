@@ -9,6 +9,7 @@
   --line: #2a2b31;
   --accent: #ff9f1a;
   --grid: #8b8b8b;
+  --gridBold: #5a5a5a;
 }
 
 [data-theme="light"] {
