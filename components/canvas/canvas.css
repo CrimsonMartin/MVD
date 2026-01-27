@@ -1,0 +1,25 @@
+/* Center canvas area */
+
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+.canvasWrap {
+  position: relative;
+  width: min(100%, 1100px);
+  aspect-ratio: 3 / 2;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}

@@ -1,0 +1,63 @@
+/* Left panel toolbar: segmented tabs and tool buttons */
+
+.left {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 12px;
+}
+
+.segmented {
+  display: flex;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.seg {
+  flex: 1;
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  padding: 10px 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.seg.on {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tools {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tool {
+  text-align: left;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  color: var(--text);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.tool.on {
+  outline: 2px solid rgba(255, 159, 26, 0.55);
+}
+
+/* Responsive */
+@media (max-width: 980px) {
+  .left {
+    width: auto;
+    padding: 10px;
+  }
+  .tool {
+    text-align: center;
+  }
+}

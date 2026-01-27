@@ -1,0 +1,19 @@
+/* Main app layout grid */
+
+.app {
+  height: calc(100vh - 56px);
+  display: grid;
+  grid-template-columns: 240px 1fr 48px;
+  transition: grid-template-columns 0.3s ease;
+}
+
+.app.inspector-expanded {
+  grid-template-columns: 240px 1fr 360px;
+}
+
+/* Responsive layout */
+@media (max-width: 980px) {
+  .app {
+    grid-template-columns: 84px 1fr;
+  }
+}

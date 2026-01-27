@@ -7,166 +7,36 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./assets/icon-192.png">
   <meta name="theme-color" content="#111111" />
-  <link rel="stylesheet" href="./styles.css" />
+  
+  <!-- Component stylesheets -->
+  <link rel="stylesheet" href="./components/base/base.css" />
+  <link rel="stylesheet" href="./components/app/layout.css" />
+  <link rel="stylesheet" href="./components/topbar/topbar.css" />
+  <link rel="stylesheet" href="./components/toolbar/toolbar.css" />
+  <link rel="stylesheet" href="./components/canvas/canvas.css" />
+  <link rel="stylesheet" href="./components/inspector/inspector.css" />
+  <link rel="stylesheet" href="./components/settings/settings.css" />
+  <link rel="stylesheet" href="./components/preview/preview.css" />
 </head>
 <body>
-  <header class="topbar">
-    <button class="iconBtn" id="btnSettings" aria-label="Settings">⚙️</button>
-    <div class="title">MVD</div>
-    <div class="spacer"></div>
-    <button class="btn" id="btnPreview">Preview Project</button>
-  </header>
-
+  <!-- Component containers -->
+  <div id="topbar-container"></div>
+  
   <main class="app">
-    <aside class="left" id="leftPanel">
-      <div class="segmented">
-        <button class="seg on" id="tabLaser">Laser</button>
-        <button class="seg" id="tabCNC">CNC</button>
-      </div>
-
-      <nav class="tools">
-        <button class="tool on" data-tool="select">Select</button>
-        <button class="tool" data-tool="freehand">Freehand</button>
-        <button class="tool" data-tool="shape">Shapes</button>
-        <button class="tool" data-tool="text">Text</button>
-        <button class="tool" data-tool="import">Import</button>
-      </nav>
-    </aside>
-
-    <section class="center">
-      <div class="canvasWrap">
-        <canvas id="grid" width="1200" height="800"></canvas>
-        <canvas id="scene" width="1200" height="800"></canvas>
-      </div>
-    </section>
-
-    <aside class="right" id="rightPanel">
-      <div class="inspectorHeader">
-        <div class="inspectorTitle">Inspector</div>
-        <button class="iconBtn" id="btnCollapseInspector" aria-label="Collapse inspector">›</button>
-      </div>
-
-      <div class="group">
-        <button class="groupHeader" data-collapse="object">Object</button>
-        <div class="groupBody" id="group-object">
-          <div class="row"><label>X</label><input id="x" type="number" value="0"></div>
-          <div class="row"><label>Y</label><input id="y" type="number" value="0"></div>
-          <div class="row"><label>W</label><input id="w" type="number" value="100"></div>
-          <div class="row"><label>H</label><input id="h" type="number" value="60"></div>
-        </div>
-      </div>
-
-      <div class="group">
-        <button class="groupHeader" data-collapse="laser">Laser</button>
-        <div class="groupBody" id="group-laser">
-          <div class="row">
-            <label>Fill</label>
-            <select id="laserFill">
-              <option value="outline">Outline</option>
-              <option value="filled">Filled</option>
-            </select>
-          </div>
-          <div class="row">
-            <label>Color</label>
-            <input id="laserColor" type="color" value="#ffffff">
-          </div>
-        </div>
-      </div>
-
-      <div class="group">
-        <button class="groupHeader" data-collapse="text">Text</button>
-        <div class="groupBody" id="group-text">
-          <div class="row">
-            <label>Font</label>
-            <select id="font">
-              <option value="system-ui">System</option>
-              <option value="Arial">Arial</option>
-              <option value="Helvetica">Helvetica</option>
-              <option value="Georgia">Georgia</option>
-              <option value="Times New Roman">Times</option>
-            </select>
-          </div>
-          <div class="row">
-            <label>Size</label>
-            <input id="fontSize" type="range" min="8" max="120" value="34">
-          </div>
-          <div class="row buttons">
-            <button class="chip" id="bold">B</button>
-            <button class="chip" id="italic">I</button>
-            <button class="chip" id="underline">U</button>
-            <button class="chip" id="strike">S</button>
-          </div>
-          <div class="row">
-            <label>Spacing</label>
-            <input id="letterSpacing" type="range" min="-2" max="20" value="0">
-          </div>
-          <div class="row">
-            <label>Multi-line</label>
-            <input id="multiline" type="checkbox" checked>
-          </div>
-          <textarea id="textValue" rows="4">Zachary</textarea>
-        </div>
-      </div>
-    </aside>
+    <div id="toolbar-container"></div>
+    <div id="canvas-container"></div>
+    <div id="inspector-container"></div>
   </main>
+  
+  <div id="modals-container"></div>
 
-  <dialog id="settings">
-    <form method="dialog" class="modal">
-      <div class="modalHeader">
-        <strong>Settings</strong>
-        <button class="iconBtn" value="cancel" aria-label="Close">✕</button>
-      </div>
-
-      <div class="modalBody">
-        <div class="groupBody">
-          <div class="row"><label>Project Name</label><input id="projectName" value="Untitled"></div>
-          <div class="row"><label>Work Area W (mm)</label><input id="waW" type="number" value="300"></div>
-          <div class="row"><label>Work Area H (mm)</label><input id="waH" type="number" value="200"></div>
-          <div class="row"><label>Thickness (mm)</label><input id="waT" type="number" value="20"></div>
-
-          <div class="row">
-            <label>Snap</label>
-            <input id="snap" type="checkbox" checked>
-          </div>
-
-          <div class="row">
-            <label>Theme</label>
-            <select id="theme">
-              <option value="system">Match system</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-          </div>
-
-          <hr>
-          <div class="row buttons">
-            <button class="btn" id="btnSaveLocal" type="button">Save Project</button>
-            <button class="btn" id="btnExport" type="button">Export</button>
-          </div>
-
-          <div class="groupBody">
-            <strong>Preview Code</strong>
-            <pre id="previewCode" class="code"></pre>
-          </div>
-        </div>
-      </div>
-    </form>
-  </dialog>
-
-  <dialog id="preview">
-    <form method="dialog" class="modal modalWide">
-      <div class="modalHeader">
-        <strong>Preview Project</strong>
-        <button class="iconBtn" value="cancel" aria-label="Close">✕</button>
-      </div>
-      <div class="modalBody previewBody">
-        <div class="previewCard">
-          <canvas id="previewCanvas" width="1200" height="800"></canvas>
-        </div>
-      </div>
-    </form>
-  </dialog>
-
-  <script src="./app.js"></script>
+  <!-- Component scripts -->
+  <script src="./components/app/state.js"></script>
+  <script src="./components/canvas/canvas.js"></script>
+  <script src="./components/toolbar/toolbar.js"></script>
+  <script src="./components/inspector/inspector.js"></script>
+  <script src="./components/settings/settings.js"></script>
+  <script src="./components/preview/preview.js"></script>
+  <script src="./components/app/app.js"></script>
 </body>
 </html>

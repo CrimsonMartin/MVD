@@ -1,0 +1,42 @@
+<dialog id="settings">
+  <form method="dialog" class="modal">
+    <div class="modalHeader">
+      <strong>Settings</strong>
+      <button class="iconBtn" value="cancel" aria-label="Close">✕</button>
+    </div>
+
+    <div class="modalBody">
+      <div class="groupBody">
+        <div class="row"><label>Project Name</label><input id="projectName" value="Untitled"></div>
+        <div class="row"><label>Work Area W (mm)</label><input id="waW" type="number" value="300"></div>
+        <div class="row"><label>Work Area H (mm)</label><input id="waH" type="number" value="200"></div>
+        <div class="row"><label>Thickness (mm)</label><input id="waT" type="number" value="20"></div>
+
+        <div class="row">
+          <label>Snap</label>
+          <input id="snap" type="checkbox" checked>
+        </div>
+
+        <div class="row">
+          <label>Theme</label>
+          <select id="theme">
+            <option value="system">Match system</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
+
+        <hr>
+        <div class="row buttons">
+          <button class="btn" id="btnSaveLocal" type="button">Save Project</button>
+          <button class="btn" id="btnExport" type="button">Export</button>
+        </div>
+
+        <div class="groupBody">
+          <strong>Preview Code</strong>
+          <pre id="previewCode" class="code"></pre>
+        </div>
+      </div>
+    </div>
+  </form>
+</dialog>
