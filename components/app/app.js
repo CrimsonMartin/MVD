@@ -37,6 +37,7 @@ async function initApp() {
 
   // Initialize all component functionality
   initToolbar();
+  initCanvas();
   initInspector();
   initSettings();
   initPreview();

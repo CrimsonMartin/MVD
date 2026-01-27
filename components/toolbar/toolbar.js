@@ -1,11 +1,43 @@
 // Left panel toolbar (mode tabs and tool selection)
 
+function setMode(mode) {
+  state.mode = mode;
+  $("modeLaser")?.classList.toggle("active", mode === "laser");
+  $("modeCNC")?.classList.toggle("active", mode === "cnc");
+  // Also support legacy tab IDs
+  $("tabLaser")?.classList.toggle("on", mode === "laser");
+  $("tabCNC")?.classList.toggle("on", mode === "cnc");
+  if (typeof render === 'function') {
+    render();
+  }
+}
+
+function setTool(tool) {
+  state.tool = tool;
+  document.querySelectorAll(".toolBtn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.tool === tool);
+  });
+  // Also support legacy tool class
+  document.querySelectorAll(".tool").forEach(btn => {
+    btn.classList.toggle("on", btn.dataset.tool === tool);
+  });
+
+  // Placeholder: Import tool
+  if (tool === "import") {
+    alert("Import is wired as a placeholder. Next step: add image upload + WASM trace.");
+    state.tool = "select";
+    document.querySelectorAll(".toolBtn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.tool === "select");
+    });
+    document.querySelectorAll(".tool").forEach(btn => {
+      btn.classList.toggle("on", btn.dataset.tool === "select");
+    });
+  }
+}
+
 function initToolbar() {
-  const leftPanel = document.getElementById("leftPanel");
-  const btnCollapseToolbar = document.getElementById("btnCollapseToolbar");
-  const tabLaser = document.getElementById("tabLaser");
-  const tabCNC = document.getElementById("tabCNC");
-  const toolButtons = document.querySelectorAll(".tool");
+  const leftPanel = $("leftPanel");
+  const btnCollapseToolbar = $("btnCollapseToolbar");
   const appContainer = document.querySelector(".app");
 
   // Safety check for required elements
@@ -14,10 +46,9 @@ function initToolbar() {
     return;
   }
 
-  // Check localStorage - if it says expanded (or false), expand with animation
+  // Check localStorage for saved state
   const savedState = localStorage.getItem('toolbarCollapsed');
   if (savedState === 'false') {
-    // Use setTimeout to ensure the transition happens after initial render
     setTimeout(() => {
       state.toolbarCollapsed = false;
       leftPanel.classList.remove('collapsed');
@@ -35,25 +66,20 @@ function initToolbar() {
     btnCollapseToolbar.textContent = state.toolbarCollapsed ? "›" : "‹";
   });
 
-  // Tab switching (Laser/CNC)
-  tabLaser.addEventListener("click", () => {
-    state.mode = "laser";
-    tabLaser.classList.add("on");
-    tabCNC.classList.remove("on");
+  // Mode switching (Laser/CNC) - support both new and legacy element IDs
+  document.querySelectorAll(".seg").forEach(btn => {
+    btn.addEventListener("click", () => setMode(btn.dataset.mode));
   });
 
-  tabCNC.addEventListener("click", () => {
-    state.mode = "cnc";
-    tabCNC.classList.add("on");
-    tabLaser.classList.remove("on");
-  });
+  const tabLaser = $("tabLaser"), tabCNC = $("tabCNC");
+  tabLaser?.addEventListener("click", () => setMode("laser"));
+  tabCNC?.addEventListener("click", () => setMode("cnc"));
 
-  // Tool selection
-  toolButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      state.tool = btn.dataset.tool;
-      toolButtons.forEach(b => b.classList.remove("on"));
-      btn.classList.add("on");
-    });
+  // Tool selection - support both new and legacy classes
+  document.querySelectorAll(".toolBtn").forEach(btn => {
+    btn.addEventListener("click", () => setTool(btn.dataset.tool));
+  });
+  document.querySelectorAll(".tool").forEach(btn => {
+    btn.addEventListener("click", () => setTool(btn.dataset.tool));
   });
 }
