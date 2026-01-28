@@ -115,7 +115,7 @@ textarea,
 }
 
 /* Responsive */
-@media (max-width: 980px) {
+@media (max-width: 600px) {
   .right {
     display: none;
   }
