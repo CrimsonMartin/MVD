@@ -16,4 +16,51 @@
     <button class="tool" data-tool="text">Text</button>
     <button class="tool" data-tool="import">Import</button>
   </nav>
+
+  <div class="toolOptions" id="toolOptions">
+    <div class="toolOptionsHeader">Tool Options</div>
+    
+    <!-- Shape palette (for Shapes tool) -->
+    <div class="optionGroup" id="optShapePalette">
+      <label>Shape</label>
+      <div class="shapePalette">
+        <button class="shapeBtn on" data-shape="rect" title="Rectangle">▢</button>
+        <button class="shapeBtn" data-shape="ellipse" title="Ellipse">○</button>
+        <button class="shapeBtn" data-shape="line" title="Line">╱</button>
+      </div>
+    </div>
+
+    <!-- Line width (for Freehand and Shapes) -->
+    <div class="optionGroup" id="optLineWidth">
+      <label>Line Width</label>
+      <div class="sliderRow">
+        <input type="range" id="rngLineWidth" min="1" max="20" value="3">
+        <span id="lblLineWidth">3px</span>
+      </div>
+    </div>
+
+    <!-- Fill mode (for Shapes) -->
+    <div class="optionGroup" id="optFillMode">
+      <label>Fill</label>
+      <div class="fillToggle">
+        <button class="fillBtn on" data-fill="outline">Outline</button>
+        <button class="fillBtn" data-fill="filled">Filled</button>
+      </div>
+    </div>
+
+    <!-- Color picker -->
+    <div class="optionGroup" id="optColor">
+      <label>Color</label>
+      <input type="color" id="toolColorPicker" value="#4aa3ff">
+    </div>
+
+    <!-- Depth (for CNC mode) -->
+    <div class="optionGroup" id="optDepth">
+      <label>Depth (mm)</label>
+      <div class="sliderRow">
+        <input type="range" id="rngDepth" min="0" max="20" value="5">
+        <span id="lblDepth">5mm</span>
+      </div>
+    </div>
+  </div>
 </aside>
