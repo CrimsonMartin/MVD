@@ -6,6 +6,11 @@ let clipboard = null;
 // Context menu element
 let contextMenu = null;
 
+// Undo/Redo history stacks
+let undoStack = [];
+let redoStack = [];
+const MAX_HISTORY = 50;
+
 // Dependencies injected during initialization
 let canvasElement = null;
 let hitTestFn = null;
@@ -54,8 +59,16 @@ function deleteSelected() {
   const state = getStateFn();
   const idx = state.objects.findIndex(o => o.id === sel.id);
   if (idx > -1) {
+    // Record undo action before deleting
+    pushUndo({
+      type: "delete",
+      objectId: sel.id,
+      object: JSON.parse(JSON.stringify(sel))
+    });
+    
     state.objects.splice(idx, 1);
     clearSelectionFn();
+    renderFn();
   }
 }
 
@@ -98,6 +111,13 @@ function pasteFromClipboard() {
   state.objects.push(newObj);
   selectObjectFn(newObj.id);
   
+  // Record undo action for paste
+  pushUndo({
+    type: "create",
+    objectId: newObj.id,
+    object: JSON.parse(JSON.stringify(newObj))
+  });
+  
   // Update clipboard position for next paste
   clipboard.x += 20;
   clipboard.y += 20;
@@ -107,6 +127,135 @@ function pasteFromClipboard() {
       p.y += 20;
     }
   }
+}
+
+/* ---------------- Undo/Redo functions ---------------- */
+
+/**
+ * Push an action to the undo stack
+ * @param {Object} action - The action to record
+ * @param {string} action.type - "create", "move", "resize", or "delete"
+ * @param {string} action.objectId - ID of the affected object
+ * @param {Object} [action.previousState] - Previous state for move/resize
+ * @param {Object} [action.object] - Full object for create/delete
+ */
+function pushUndo(action) {
+  undoStack.push(action);
+  if (undoStack.length > MAX_HISTORY) {
+    undoStack.shift(); // Remove oldest action
+  }
+  // Clear redo stack when new action is performed
+  redoStack = [];
+}
+
+/**
+ * Undo the last action
+ */
+function undo() {
+  if (undoStack.length === 0) return;
+  
+  const action = undoStack.pop();
+  const state = getStateFn();
+  
+  switch (action.type) {
+    case "create":
+      // Undo create = delete the object
+      const createIdx = state.objects.findIndex(o => o.id === action.objectId);
+      if (createIdx > -1) {
+        state.objects.splice(createIdx, 1);
+        clearSelectionFn();
+      }
+      // Push to redo stack
+      redoStack.push(action);
+      break;
+      
+    case "delete":
+      // Undo delete = restore the object
+      state.objects.push(JSON.parse(JSON.stringify(action.object)));
+      selectObjectFn(action.objectId);
+      // Push to redo stack
+      redoStack.push(action);
+      break;
+      
+    case "move":
+    case "resize":
+      // Undo move/resize = restore previous state
+      const obj = state.objects.find(o => o.id === action.objectId);
+      if (obj) {
+        // Save current state for redo
+        const currentState = JSON.parse(JSON.stringify(obj));
+        
+        // Restore previous state
+        Object.assign(obj, action.previousState);
+        
+        // Push to redo stack with current state as previousState
+        redoStack.push({
+          type: action.type,
+          objectId: action.objectId,
+          previousState: currentState
+        });
+        
+        selectObjectFn(action.objectId);
+      }
+      break;
+  }
+  
+  renderFn();
+}
+
+/**
+ * Redo the last undone action
+ */
+function redo() {
+  if (redoStack.length === 0) return;
+  
+  const action = redoStack.pop();
+  const state = getStateFn();
+  
+  switch (action.type) {
+    case "create":
+      // Redo create = add the object back
+      state.objects.push(JSON.parse(JSON.stringify(action.object)));
+      selectObjectFn(action.objectId);
+      // Push back to undo stack
+      undoStack.push(action);
+      break;
+      
+    case "delete":
+      // Redo delete = remove the object again
+      const deleteIdx = state.objects.findIndex(o => o.id === action.objectId);
+      if (deleteIdx > -1) {
+        state.objects.splice(deleteIdx, 1);
+        clearSelectionFn();
+      }
+      // Push back to undo stack
+      undoStack.push(action);
+      break;
+      
+    case "move":
+    case "resize":
+      // Redo move/resize = apply the state change again
+      const obj = state.objects.find(o => o.id === action.objectId);
+      if (obj) {
+        // Save current state for undo
+        const currentState = JSON.parse(JSON.stringify(obj));
+        
+        // Apply the redo state
+        Object.assign(obj, action.previousState);
+        
+        // Push back to undo stack with current state
+        undoStack.push({
+          type: action.type,
+          objectId: action.objectId,
+          previousState: currentState
+        });
+        
+        selectObjectFn(action.objectId);
+      }
+      break;
+  }
+  
+  renderFn();
 }
 
 /* ---------------- Keyboard shortcuts ---------------- */
@@ -143,6 +292,20 @@ function setupKeyboardShortcuts() {
     if ((e.ctrlKey || e.metaKey) && e.key === "v") {
       e.preventDefault();
       pasteFromClipboard();
+      return;
+    }
+    
+    // Ctrl+Z - undo
+    if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+      e.preventDefault();
+      undo();
+      return;
+    }
+    
+    // Ctrl+Shift+Z or Ctrl+Y - redo
+    if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey) || (e.key === "Z" && e.shiftKey))) {
+      e.preventDefault();
+      redo();
       return;
     }
   });
@@ -258,3 +421,6 @@ window.deleteSelected = deleteSelected;
 window.copySelected = copySelected;
 window.cutSelected = cutSelected;
 window.pasteFromClipboard = pasteFromClipboard;
+window.pushUndo = pushUndo;
+window.undo = undo;
+window.redo = redo;

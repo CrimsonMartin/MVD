@@ -415,6 +415,14 @@ function setupPointerEvents() {
       };
       state.objects.push(o);
       selectObject(o.id);
+      // Record undo action for shape creation
+      if (typeof pushUndo === 'function') {
+        pushUndo({
+          type: "create",
+          objectId: o.id,
+          object: JSON.parse(JSON.stringify(o))
+        });
+      }
       // Switch to select tool after creating shape
       if (typeof setTool === 'function') setTool("select");
       return;
@@ -446,6 +454,14 @@ function setupPointerEvents() {
       };
       state.objects.push(o);
       selectObject(o.id);
+      // Record undo action for text creation
+      if (typeof pushUndo === 'function') {
+        pushUndo({
+          type: "create",
+          objectId: o.id,
+          object: JSON.parse(JSON.stringify(o))
+        });
+      }
       $("txtText")?.focus();
       // Switch to select tool after creating text
       if (typeof setTool === 'function') setTool("select");
@@ -582,9 +598,37 @@ function setupPointerEvents() {
       currentPath.w = bounds.w;
       currentPath.h = bounds.h;
       selectObject(currentPath.id);
+      // Record undo action for freehand path creation
+      if (typeof pushUndo === 'function') {
+        pushUndo({
+          type: "create",
+          objectId: currentPath.id,
+          object: JSON.parse(JSON.stringify(currentPath))
+        });
+      }
       currentPath = null;
       // Switch to select tool after creating freehand path
       if (typeof setTool === 'function') setTool("select");
+    }
+    
+    // Record undo action for move/resize if object was actually moved/resized
+    if ((pointer.mode === "drag" || pointer.mode === "resize") && pointer.objStart) {
+      const sel = getSelected();
+      if (sel) {
+        // Check if the object actually changed position/size
+        const moved = sel.x !== pointer.objStart.x || sel.y !== pointer.objStart.y;
+        const resized = sel.w !== pointer.objStart.w || sel.h !== pointer.objStart.h;
+        
+        if (moved || resized) {
+          if (typeof pushUndo === 'function') {
+            pushUndo({
+              type: pointer.mode === "drag" ? "move" : "resize",
+              objectId: sel.id,
+              previousState: JSON.parse(JSON.stringify(pointer.objStart))
+            });
+          }
+        }
+      }
     }
     
     pointer.active = false;
