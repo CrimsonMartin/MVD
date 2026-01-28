@@ -517,12 +517,30 @@ function setupPointerEvents() {
         }
       }
     } else if (pointer.mode === "resize") {
-      const newW = Math.max(20, pointer.objStart.w + dx);
-      const newH = Math.max(20, pointer.objStart.h + dy);
-      sel.w = newW;
-      sel.h = newH;
+      // Allow negative dimensions for flipping/mirroring
+      const newW = pointer.objStart.w + dx;
+      const newH = pointer.objStart.h + dy;
       
-      // For path objects, scale all points proportionally
+      // Calculate new position and dimensions (handle flipping)
+      if (newW >= 0) {
+        sel.x = pointer.objStart.x;
+        sel.w = Math.max(1, newW); // Minimum 1px to avoid zero-size
+      } else {
+        // Flipping horizontally - move x to the new left edge
+        sel.x = pointer.objStart.x + newW;
+        sel.w = Math.max(1, -newW);
+      }
+      
+      if (newH >= 0) {
+        sel.y = pointer.objStart.y;
+        sel.h = Math.max(1, newH);
+      } else {
+        // Flipping vertically - move y to the new top edge
+        sel.y = pointer.objStart.y + newH;
+        sel.h = Math.max(1, -newH);
+      }
+      
+      // For path objects, scale and potentially flip all points
       if (sel.type === "path" && sel.points && pointer.objStart.points && pointer.objStart.w > 0 && pointer.objStart.h > 0) {
         const scaleX = newW / pointer.objStart.w;
         const scaleY = newH / pointer.objStart.h;
@@ -530,11 +548,23 @@ function setupPointerEvents() {
         const originY = pointer.objStart.y;
         
         for (let i = 0; i < sel.points.length; i++) {
-          // Scale relative to the bounding box origin
+          // Scale relative to the bounding box origin (handles flipping via negative scale)
           const relX = pointer.objStart.points[i].x - originX;
           const relY = pointer.objStart.points[i].y - originY;
-          sel.points[i].x = originX + relX * scaleX;
-          sel.points[i].y = originY + relY * scaleY;
+          
+          if (newW >= 0) {
+            sel.points[i].x = originX + relX * scaleX;
+          } else {
+            // Flip horizontally
+            sel.points[i].x = originX + newW + relX * Math.abs(scaleX);
+          }
+          
+          if (newH >= 0) {
+            sel.points[i].y = originY + relY * scaleY;
+          } else {
+            // Flip vertically
+            sel.points[i].y = originY + newH + relY * Math.abs(scaleY);
+          }
         }
       }
     }
@@ -590,7 +620,7 @@ function setupPointerEvents() {
   setupContextMenu();
 }
 
-/* ---------------- Delete, Copy, Paste functions ---------------- */
+/* ---------------- Delete, Copy, Cut, Paste functions ---------------- */
 
 function deleteSelected() {
   const sel = getSelected();
@@ -609,6 +639,15 @@ function copySelected() {
   
   // Deep clone the object
   clipboard = JSON.parse(JSON.stringify(sel));
+}
+
+function cutSelected() {
+  const sel = getSelected();
+  if (!sel) return;
+  
+  // Copy first, then delete
+  copySelected();
+  deleteSelected();
 }
 
 function pasteFromClipboard() {
@@ -665,6 +704,13 @@ function setupKeyboardShortcuts() {
       return;
     }
     
+    // Ctrl+X - cut
+    if ((e.ctrlKey || e.metaKey) && e.key === "x") {
+      e.preventDefault();
+      cutSelected();
+      return;
+    }
+    
     // Ctrl+V - paste
     if ((e.ctrlKey || e.metaKey) && e.key === "v") {
       e.preventDefault();
@@ -684,6 +730,7 @@ function setupContextMenu() {
   contextMenu.id = "canvasContextMenu";
   contextMenu.className = "context-menu";
   contextMenu.innerHTML = `
+    <button class="context-menu-item" data-action="cut">Cut</button>
     <button class="context-menu-item" data-action="copy">Copy</button>
     <button class="context-menu-item" data-action="paste">Paste</button>
     <div class="context-menu-divider"></div>
@@ -700,6 +747,9 @@ function setupContextMenu() {
     hideContextMenu();
     
     switch (action) {
+      case "cut":
+        cutSelected();
+        break;
       case "copy":
         copySelected();
         break;
@@ -745,10 +795,12 @@ function showContextMenu(x, y) {
   const sel = getSelected();
   
   // Enable/disable menu items based on state
+  const cutBtn = contextMenu.querySelector('[data-action="cut"]');
   const copyBtn = contextMenu.querySelector('[data-action="copy"]');
   const pasteBtn = contextMenu.querySelector('[data-action="paste"]');
   const deleteBtn = contextMenu.querySelector('[data-action="delete"]');
   
+  if (cutBtn) cutBtn.disabled = !sel;
   if (copyBtn) copyBtn.disabled = !sel;
   if (deleteBtn) deleteBtn.disabled = !sel;
   if (pasteBtn) pasteBtn.disabled = !clipboard;

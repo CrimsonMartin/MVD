@@ -6,7 +6,7 @@ const state = {
   tool: "select",         // select | freehand | shape | text | import
   theme: "system",        // system | dark | light
   grid: "on",             // on | off
-  dragSensitivity: 0.75,  // makes movement less touchy
+  dragSensitivity: 0.85,  // makes movement less touchy
 
   objects: [],
   selectedId: null,
