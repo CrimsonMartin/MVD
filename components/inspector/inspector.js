@@ -131,4 +131,7 @@ function initInspector() {
 
   // Bind inspector inputs
   bindInspectorInputs();
+
+  // Sync inspector with any initially selected object
+  syncInspectorFromSelection();
 }

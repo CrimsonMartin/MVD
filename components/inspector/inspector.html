@@ -7,10 +7,12 @@
   <div class="group">
     <button class="groupHeader" data-collapse="object">Object</button>
     <div class="groupBody" id="group-object">
-      <div class="row"><label>X</label><input id="x" type="number" value="0"></div>
-      <div class="row"><label>Y</label><input id="y" type="number" value="0"></div>
-      <div class="row"><label>W</label><input id="w" type="number" value="100"></div>
-      <div class="row"><label>H</label><input id="h" type="number" value="60"></div>
+      <div class="row"><label>X</label><input id="inpX" type="number" value="0"></div>
+      <div class="row"><label>Y</label><input id="inpY" type="number" value="0"></div>
+      <div class="row"><label>W</label><input id="inpW" type="number" value="100"></div>
+      <div class="row"><label>H</label><input id="inpH" type="number" value="60"></div>
+      <div class="row"><label>Locked</label><input id="chkLocked" type="checkbox"></div>
+      <div class="row"><label>Hidden</label><input id="chkHidden" type="checkbox"></div>
     </div>
   </div>
 
@@ -19,14 +21,14 @@
     <div class="groupBody" id="group-laser">
       <div class="row">
         <label>Fill</label>
-        <select id="laserFill">
+        <select id="selFillMode">
           <option value="outline">Outline</option>
           <option value="filled">Filled</option>
         </select>
       </div>
       <div class="row">
         <label>Color</label>
-        <input id="laserColor" type="color" value="#ffffff">
+        <input id="inpColor" type="color" value="#4aa3ff">
       </div>
     </div>
   </div>
@@ -36,33 +38,39 @@
     <div class="groupBody" id="group-text">
       <div class="row">
         <label>Font</label>
-        <select id="font">
-          <option value="system-ui">System</option>
-          <option value="Arial">Arial</option>
-          <option value="Helvetica">Helvetica</option>
-          <option value="Georgia">Georgia</option>
-          <option value="Times New Roman">Times</option>
+        <select id="selFont">
+          <option value="system">System</option>
+          <option value="serif">Serif</option>
+          <option value="mono">Mono</option>
         </select>
       </div>
       <div class="row">
         <label>Size</label>
-        <input id="fontSize" type="range" min="8" max="120" value="34">
+        <input id="rngFontSize" type="range" min="8" max="120" value="48">
       </div>
       <div class="row buttons">
-        <button class="chip" id="bold">B</button>
-        <button class="chip" id="italic">I</button>
-        <button class="chip" id="underline">U</button>
-        <button class="chip" id="strike">S</button>
+        <button class="chip" id="btnBold">B</button>
+        <button class="chip" id="btnItalic">I</button>
+        <button class="chip" id="btnUnderline">U</button>
+        <button class="chip" id="btnStrike">S</button>
       </div>
       <div class="row">
         <label>Spacing</label>
-        <input id="letterSpacing" type="range" min="-2" max="20" value="0">
+        <input id="rngLetter" type="range" min="-2" max="20" value="0">
+      </div>
+      <div class="row">
+        <label>Align</label>
+        <select id="selAlign">
+          <option value="left">Left</option>
+          <option value="center">Center</option>
+          <option value="right">Right</option>
+        </select>
       </div>
       <div class="row">
         <label>Multi-line</label>
-        <input id="multiline" type="checkbox" checked>
+        <input id="chkMultiline" type="checkbox">
       </div>
-      <textarea id="textValue" rows="4">Zachary</textarea>
+      <textarea id="txtText" rows="4" placeholder="Enter text..."></textarea>
     </div>
   </div>
 </aside>

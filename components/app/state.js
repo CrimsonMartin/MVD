@@ -6,7 +6,7 @@ const state = {
   tool: "select",         // select | freehand | shape | text | import
   theme: "system",        // system | dark | light
   grid: "on",             // on | off
-  dragSensitivity: 0.35,  // makes movement less touchy
+  dragSensitivity: 0.85,  // makes movement less touchy
 
   objects: [],
   selectedId: null,
@@ -19,6 +19,13 @@ const state = {
   toolbarCollapsed: true,
   inspectorCollapsed: true,
   collapsedGroups: {},
+
+  // Tool options
+  toolColor: "#4aa3ff",       // Default drawing color
+  toolStrokeWidth: 3,         // Line width (1-20)
+  toolDepth: 5,               // CNC depth in mm (0-20)
+  toolShape: "rect",          // rect | ellipse | line
+  toolFillMode: "outline",    // outline | filled
 
   // Legacy state fields (for compatibility)
   snap: true,

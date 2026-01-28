@@ -14,6 +14,7 @@ function initCanvas() {
   setupPointerEvents();
 
   // Seed a default rectangle so you see something immediately
+
   const rect = {
     id: uid(),
     type: "rect",
@@ -29,6 +30,7 @@ function initCanvas() {
   };
   state.objects.push(rect);
   selectObject(rect.id);
+
 
   // Keep theme synced if "system"
   if (window.matchMedia) {
@@ -98,13 +100,52 @@ function drawObject(o, isPreview = false) {
   ctx.save();
 
   if (o.type === "rect") {
-    ctx.lineWidth = 3;
+    ctx.lineWidth = o.strokeWidth || 3;
     ctx.strokeStyle = stroke;
     if (fill) {
       ctx.fillStyle = fill;
       ctx.fillRect(o.x, o.y, o.w, o.h);
     }
     ctx.strokeRect(o.x, o.y, o.w, o.h);
+  }
+
+  if (o.type === "path" && o.points && o.points.length > 1) {
+    ctx.lineWidth = o.strokeWidth || 3;
+    ctx.strokeStyle = stroke;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(o.points[0].x, o.points[0].y);
+    for (let i = 1; i < o.points.length; i++) {
+      ctx.lineTo(o.points[i].x, o.points[i].y);
+    }
+    ctx.stroke();
+  }
+
+  if (o.type === "ellipse") {
+    ctx.lineWidth = o.strokeWidth || 3;
+    ctx.strokeStyle = stroke;
+    const cx = o.x + o.w / 2;
+    const cy = o.y + o.h / 2;
+    const rx = o.w / 2;
+    const ry = o.h / 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    if (fill) {
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
+    ctx.stroke();
+  }
+
+  if (o.type === "line") {
+    ctx.lineWidth = o.strokeWidth || 3;
+    ctx.strokeStyle = stroke;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(o.x, o.y);
+    ctx.lineTo(o.x + o.w, o.y + o.h);
+    ctx.stroke();
   }
 
   if (o.type === "text") {
@@ -207,6 +248,35 @@ function render() {
   for (const o of state.objects) drawObject(o, false);
 }
 
+/* ---------------- Path utilities ---------------- */
+
+function calculatePathBounds(points) {
+  if (!points || points.length === 0) {
+    return { x: 0, y: 0, w: 0, h: 0 };
+  }
+  
+  let minX = points[0].x;
+  let minY = points[0].y;
+  let maxX = points[0].x;
+  let maxY = points[0].y;
+  
+  for (const p of points) {
+    if (p.x < minX) minX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y > maxY) maxY = p.y;
+  }
+  
+  // Add padding for stroke width
+  const padding = 5;
+  return {
+    x: minX - padding,
+    y: minY - padding,
+    w: Math.max(20, maxX - minX + padding * 2),
+    h: Math.max(20, maxY - minY + padding * 2)
+  };
+}
+
 /* ---------------- Hit testing ---------------- */
 
 function hitTest(x, y) {
@@ -237,6 +307,9 @@ let pointer = {
   objStart: null
 };
 
+// Freehand drawing state
+let currentPath = null;
+
 function canvasPointFromEvent(e) {
   const rect = canvas.getBoundingClientRect();
   const sx = canvas.width / rect.width;
@@ -246,8 +319,44 @@ function canvasPointFromEvent(e) {
   return { x, y };
 }
 
+function updateCursor(x, y) {
+  if (!canvas) return;
+  
+  // Drawing tools get crosshair cursor
+  if (state.tool === "freehand" || state.tool === "shape" || state.tool === "text") {
+    canvas.style.cursor = "crosshair";
+    return;
+  }
+  
+  const sel = getSelected();
+  
+  // Check if over resize handle of selected object
+  if (sel && !sel.locked && hitResizeHandle(sel, x, y)) {
+    canvas.style.cursor = "nwse-resize";
+    return;
+  }
+  
+  // Check if over any object (for move cursor)
+  const hit = hitTest(x, y);
+  if (hit && !hit.locked) {
+    canvas.style.cursor = "move";
+    return;
+  }
+  
+  // Default cursor
+  canvas.style.cursor = "default";
+}
+
 function setupPointerEvents() {
   if (!canvas) return;
+
+  // Cursor feedback on hover (when not actively dragging)
+  canvas.addEventListener("pointermove", (e) => {
+    if (pointer.active) return; // Don't update cursor while dragging
+    
+    const { x, y } = canvasPointFromEvent(e);
+    updateCursor(x, y);
+  });
 
   canvas.addEventListener("pointerdown", (e) => {
     e.preventDefault();
@@ -255,22 +364,67 @@ function setupPointerEvents() {
 
     const { x, y } = canvasPointFromEvent(e);
 
-    if (state.tool === "shape") {
-      const o = {
+    // Freehand drawing tool
+    if (state.tool === "freehand") {
+      currentPath = {
         id: uid(),
-        type: "rect",
-        x: x - 160,
-        y: y - 90,
-        w: 320,
-        h: 180,
-        color: defaultObjectColor(),
+        type: "path",
+        points: [{ x, y }],
+        x: x,
+        y: y,
+        w: 0,
+        h: 0,
+        color: state.toolColor || defaultObjectColor(),
+        strokeWidth: state.toolStrokeWidth || 3,
         fillMode: "outline",
         locked: false,
         hidden: false,
-        depthMM: 5
+        depthMM: state.toolDepth || 5
+      };
+      state.objects.push(currentPath);
+      pointer.active = true;
+      pointer.id = e.pointerId;
+      pointer.mode = "freehand";
+      render();
+      return;
+    }
+
+    if (state.tool === "shape") {
+      const shapeType = state.toolShape || "rect";
+      let w = 320, h = 180;
+      
+      // Adjust default size for line
+      if (shapeType === "line") {
+        w = 200;
+        h = 100;
+      }
+      
+      const o = {
+        id: uid(),
+        type: shapeType,
+        x: x - w / 2,
+        y: y - h / 2,
+        w: w,
+        h: h,
+        color: state.toolColor || defaultObjectColor(),
+        strokeWidth: state.toolStrokeWidth || 3,
+        fillMode: state.toolFillMode || "outline",
+        locked: false,
+        hidden: false,
+        depthMM: state.toolDepth || 5
       };
       state.objects.push(o);
       selectObject(o.id);
+      // Record undo action for shape creation
+      if (typeof pushUndo === 'function') {
+        pushUndo({
+          type: "create",
+          objectId: o.id,
+          object: JSON.parse(JSON.stringify(o))
+        });
+      }
+      // Switch to select tool after creating shape
+      if (typeof setTool === 'function') setTool("select");
       return;
     }
 
@@ -300,7 +454,17 @@ function setupPointerEvents() {
       };
       state.objects.push(o);
       selectObject(o.id);
+      // Record undo action for text creation
+      if (typeof pushUndo === 'function') {
+        pushUndo({
+          type: "create",
+          objectId: o.id,
+          object: JSON.parse(JSON.stringify(o))
+        });
+      }
       $("txtText")?.focus();
+      // Switch to select tool after creating text
+      if (typeof setTool === 'function') setTool("select");
       return;
     }
 
@@ -318,17 +482,35 @@ function setupPointerEvents() {
     pointer.startX = x;
     pointer.startY = y;
     pointer.objStart = { ...hit };
+    
+    // Deep copy points array for path objects so we can calculate deltas during drag
+    if (hit.type === "path" && hit.points) {
+      pointer.objStart.points = hit.points.map(p => ({ x: p.x, y: p.y }));
+    }
 
     pointer.mode = hitResizeHandle(hit, x, y) ? "resize" : "drag";
+    
+    // For path resize, also store original points
+    if (pointer.mode === "resize" && hit.type === "path" && hit.points) {
+      pointer.objStart.points = hit.points.map(p => ({ x: p.x, y: p.y }));
+    }
   });
 
   canvas.addEventListener("pointermove", (e) => {
     if (!pointer.active || pointer.id !== e.pointerId) return;
 
+    const { x, y } = canvasPointFromEvent(e);
+
+    // Freehand drawing - add points
+    if (pointer.mode === "freehand" && currentPath) {
+      currentPath.points.push({ x, y });
+      render();
+      return;
+    }
+
     const sel = getSelected();
     if (!sel || sel.locked) return;
 
-    const { x, y } = canvasPointFromEvent(e);
     const dxRaw = x - pointer.startX;
     const dyRaw = y - pointer.startY;
 
@@ -338,9 +520,65 @@ function setupPointerEvents() {
     if (pointer.mode === "drag") {
       sel.x = pointer.objStart.x + dx;
       sel.y = pointer.objStart.y + dy;
+      
+      // For path objects, also move all the points
+      if (sel.type === "path" && sel.points && pointer.objStart.points) {
+        for (let i = 0; i < sel.points.length; i++) {
+          sel.points[i].x = pointer.objStart.points[i].x + dx;
+          sel.points[i].y = pointer.objStart.points[i].y + dy;
+        }
+      }
     } else if (pointer.mode === "resize") {
-      sel.w = Math.max(20, pointer.objStart.w + dx);
-      sel.h = Math.max(20, pointer.objStart.h + dy);
+      // Allow negative dimensions for flipping/mirroring
+      const newW = pointer.objStart.w + dx;
+      const newH = pointer.objStart.h + dy;
+      
+      // Calculate new position and dimensions (handle flipping)
+      if (newW >= 0) {
+        sel.x = pointer.objStart.x;
+        sel.w = Math.max(1, newW); // Minimum 1px to avoid zero-size
+      } else {
+        // Flipping horizontally - move x to the new left edge
+        sel.x = pointer.objStart.x + newW;
+        sel.w = Math.max(1, -newW);
+      }
+      
+      if (newH >= 0) {
+        sel.y = pointer.objStart.y;
+        sel.h = Math.max(1, newH);
+      } else {
+        // Flipping vertically - move y to the new top edge
+        sel.y = pointer.objStart.y + newH;
+        sel.h = Math.max(1, -newH);
+      }
+      
+      // For path objects, scale and potentially flip all points
+      if (sel.type === "path" && sel.points && pointer.objStart.points && pointer.objStart.w > 0 && pointer.objStart.h > 0) {
+        const scaleX = newW / pointer.objStart.w;
+        const scaleY = newH / pointer.objStart.h;
+        const originX = pointer.objStart.x;
+        const originY = pointer.objStart.y;
+        
+        for (let i = 0; i < sel.points.length; i++) {
+          // Scale relative to the bounding box origin (handles flipping via negative scale)
+          const relX = pointer.objStart.points[i].x - originX;
+          const relY = pointer.objStart.points[i].y - originY;
+          
+          if (newW >= 0) {
+            sel.points[i].x = originX + relX * scaleX;
+          } else {
+            // Flip horizontally
+            sel.points[i].x = originX + newW + relX * Math.abs(scaleX);
+          }
+          
+          if (newH >= 0) {
+            sel.points[i].y = originY + relY * scaleY;
+          } else {
+            // Flip vertically
+            sel.points[i].y = originY + newH + relY * Math.abs(scaleY);
+          }
+        }
+      }
     }
 
     if (typeof syncInspectorFromSelection === 'function') {
@@ -351,6 +589,48 @@ function setupPointerEvents() {
 
   canvas.addEventListener("pointerup", (e) => {
     if (pointer.id !== e.pointerId) return;
+    
+    // Finalize freehand path - calculate bounding box
+    if (pointer.mode === "freehand" && currentPath && currentPath.points.length > 1) {
+      const bounds = calculatePathBounds(currentPath.points);
+      currentPath.x = bounds.x;
+      currentPath.y = bounds.y;
+      currentPath.w = bounds.w;
+      currentPath.h = bounds.h;
+      selectObject(currentPath.id);
+      // Record undo action for freehand path creation
+      if (typeof pushUndo === 'function') {
+        pushUndo({
+          type: "create",
+          objectId: currentPath.id,
+          object: JSON.parse(JSON.stringify(currentPath))
+        });
+      }
+      currentPath = null;
+      // Switch to select tool after creating freehand path
+      if (typeof setTool === 'function') setTool("select");
+    }
+    
+    // Record undo action for move/resize if object was actually moved/resized
+    if ((pointer.mode === "drag" || pointer.mode === "resize") && pointer.objStart) {
+      const sel = getSelected();
+      if (sel) {
+        // Check if the object actually changed position/size
+        const moved = sel.x !== pointer.objStart.x || sel.y !== pointer.objStart.y;
+        const resized = sel.w !== pointer.objStart.w || sel.h !== pointer.objStart.h;
+        
+        if (moved || resized) {
+          if (typeof pushUndo === 'function') {
+            pushUndo({
+              type: pointer.mode === "drag" ? "move" : "resize",
+              objectId: sel.id,
+              previousState: JSON.parse(JSON.stringify(pointer.objStart))
+            });
+          }
+        }
+      }
+    }
+    
     pointer.active = false;
     pointer.id = null;
     pointer.mode = "none";
@@ -358,9 +638,31 @@ function setupPointerEvents() {
   });
 
   canvas.addEventListener("pointercancel", () => {
+    // Cancel freehand drawing
+    if (pointer.mode === "freehand" && currentPath) {
+      // Remove incomplete path
+      const idx = state.objects.indexOf(currentPath);
+      if (idx > -1) state.objects.splice(idx, 1);
+      currentPath = null;
+      render();
+    }
+    
     pointer.active = false;
     pointer.id = null;
     pointer.mode = "none";
     pointer.objStart = null;
+  });
+
+  // Initialize context menu component
+  initContextMenu({
+    canvas: canvas,
+    hitTest: hitTest,
+    selectObject: selectObject,
+    getSelected: getSelected,
+    clearSelection: clearSelection,
+    getState: () => state,
+    uid: uid,
+    render: render,
+    canvasPointFromEvent: canvasPointFromEvent
   });
 }
