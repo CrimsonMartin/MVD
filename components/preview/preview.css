@@ -1,0 +1,13 @@
+/* Preview modal specific styles */
+
+.previewCard {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--panel2);
+}
+
+.previewBody {
+  display: flex;
+  justify-content: center;
+}
